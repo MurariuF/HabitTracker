@@ -8,13 +8,15 @@ namespace HabitTracker
         {
             var connectionString = @"DataSource=habittracker.db";
 
-            using(var connection = new SqliteConnection(connectionString)) {
+            using (var connection = new SqliteConnection(connectionString))
+            {
                 connection.Open();
 
                 var tableCommand = connection.CreateCommand();
                 tableCommand.CommandText = "";
 
 
+            }
         }
     }
 }
