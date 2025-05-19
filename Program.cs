@@ -1,15 +1,15 @@
-﻿using Microsoft.Data.Sqlite;
+﻿using System.Globalization;
+using Microsoft.Data.Sqlite;
 using SQLitePCL;
 
 namespace HabitTracker
 {
     internal class Program
     {
+        static string connectionString = @"DataSource=habitTracker.db";
         static void Main(string[] args)
         {
-
             Batteries.Init();
-            var connectionString = @"DataSource=habitTracker.db";
 
             using (var connection = new SqliteConnection(connectionString))
             {
@@ -19,13 +19,15 @@ namespace HabitTracker
                 tableCommand.CommandText = @"CREATE TABLE IF NOT EXISTS drinking_water(
                                                 Id INTEGER PRIMARY KEY AUTOINCREMENT,
                                                 Date TEXT,
-                                                Qunatity INTEGER
+                                                Quantity INTEGER
                                              )";
 
                 tableCommand.ExecuteNonQuery();
                 
                 connection.Close();
             }
+
+            GetUserInput();
         }
 
         static void GetUserInput()
@@ -46,27 +48,117 @@ namespace HabitTracker
 
                 switch (commandInput)
                 {
-                    case 0:
+                    case "0":
                         Console.WriteLine("\n\nClosing Application");
                         closeApp = true;
                         break;
-                    case 1:
+                    case "1":
                         GetAllRecords();
                         break;
-                    case 2:
+                    case "2":
                         InsertRecord();
                         break;
-                    case 3:
-                        DeleteRecord();
-                        break;
-                    case 4:
-                        UpdateRecord();
-                        break;
+                    //case "3":
+                    //    DeleteRecord();
+                    //    break;
+                    //case "4":
+                    //    UpdateRecord();
+                    //    break;
                     default:
                         Console.WriteLine("\n\nInvalid command. Please type a number between 0 and 4");
                         break;
                 }
             }
         }
+
+        private static void GetAllRecords()
+        {
+            Console.Clear();
+
+            using (var connection = new SqliteConnection(connectionString))
+            {
+                connection.Open();
+
+                var tableCommand = connection.CreateCommand();
+                tableCommand.CommandText = "Select * from drinking_water";
+
+                List<DrikingWater> tableData = new();
+
+                SqliteDataReader reader = tableCommand.ExecuteReader();
+
+                if (reader.HasRows)
+                {
+                    while(reader.Read())
+                    {
+                        DrikingWater record = new()
+                        {
+                            Id = reader.GetInt32(0),
+                            Date = DateTime.ParseExact(reader.GetString(1), "dd-MM-yy", new CultureInfo("en-US")),
+                            Quantity = reader.GetInt32(2)
+                        };
+                        tableData.Add(record);
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("No rows found");
+                }
+                connection.Close();
+
+                foreach (var rows in tableData)
+                {
+                    Console.WriteLine($"{rows.Id} - {rows.Date.ToString("dd-MM-yyyy")} - Quantity: {rows.Quantity}");
+                }
+            }
+        }
+
+        private static void InsertRecord()
+        {
+            string date = GetDateInput();
+
+            int quantity = GetNumberInput("\n\nPlease insert number of glasses or other measure of your choice(no decimals allowed)\n\n");
+
+            using (var connection = new SqliteConnection(connectionString))
+            {
+                connection.Open();
+
+                var tableCommand = connection.CreateCommand();
+                tableCommand.CommandText = $"Insert into drinking_water(Date, Quantity) values('{date}', {quantity})";
+
+                tableCommand.ExecuteNonQuery();
+
+                connection.Close();
+            }
+        }
+
+        private static int GetNumberInput(string message)
+        {
+            Console.WriteLine(message);
+
+            string numberInput = Console.ReadLine();
+
+            if(numberInput == "0") GetUserInput();
+
+            int finalInput = Convert.ToInt32(numberInput);
+
+            return finalInput;
+        }
+
+        private static string GetDateInput()
+        {
+            Console.WriteLine("\n\nPlease enter the date in the format dd-mm-yy. Type 0 to return to main menu");
+            string dateInput = Console.ReadLine();
+
+            if(dateInput == "0")  GetUserInput();
+
+            return dateInput;
+        }
+    }
+
+    public class DrikingWater
+    {
+        public int Id { get; set; }
+        public DateTime Date { get; set; }
+        public int Quantity { get; set; }
     }
 }
