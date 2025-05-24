@@ -58,16 +58,78 @@ namespace HabitTracker
                     case "2":
                         InsertRecord();
                         break;
-                    //case "3":
-                    //    DeleteRecord();
-                    //    break;
-                    //case "4":
-                    //    UpdateRecord();
-                    //    break;
+                    case "3":
+                        DeleteRecord();
+                        break;
+                    case "4":
+                        UpdateRecord();
+                        break;
                     default:
                         Console.WriteLine("\n\nInvalid command. Please type a number between 0 and 4");
                         break;
                 }
+            }
+        }
+
+        private static void UpdateRecord()
+        {
+            Console.Clear();
+            GetAllRecords();
+
+            var recordId = GetNumberInput("\n\nPlease enter the ID of the record you want to update. Type 0 to return to main menu");
+
+            using (var connection = new SqliteConnection(connectionString))
+            {
+                connection.Open();
+
+                var checkCmd = connection.CreateCommand();
+                checkCmd.CommandText = $"Select exists(select 1 from drinking_water where Id = {recordId})";
+                int checkQuery = Convert.ToInt32(checkCmd.ExecuteScalar());
+
+                if (checkQuery == 0)
+                {
+                    Console.WriteLine($"\n\nNo record found with ID {recordId}. Returning to main menu.");
+                    connection.Close();
+                    UpdateRecord();
+                }
+
+                string date = GetDateInput();
+                int quantity =
+                    GetNumberInput(
+                        "\n\nPlease insert number of glasses of water or other measure of your choice(no decimal allowed)\n\n");
+
+                var tableCommand = connection.CreateCommand();
+
+                tableCommand.CommandText = $"Update drinking_water set date = '{date}', quantity ={quantity} where Id = {recordId} ";
+                tableCommand.ExecuteNonQuery();
+
+                connection.Close();
+            }
+        }
+
+        private static void DeleteRecord()
+        {
+            Console.Clear();
+            GetAllRecords();
+            Console.WriteLine("\n\nPlease enter the ID of the record you want to delete. Type 0 to return to main menu");
+            string idInput = Console.ReadLine();
+            if (idInput == "0") GetUserInput();
+            int id = Convert.ToInt32(idInput);
+            using (var connection = new SqliteConnection(connectionString))
+            {
+                connection.Open();
+                var tableCommand = connection.CreateCommand();
+                tableCommand.CommandText = $"Delete from drinking_water where Id = {id}";
+                int rowsAffected = tableCommand.ExecuteNonQuery();
+                if (rowsAffected > 0)
+                {
+                    Console.WriteLine($"\n\nRecord with ID {id} deleted successfully.");
+                }
+                else
+                {
+                    Console.WriteLine($"\n\nNo record found with ID {id}.");
+                }
+                connection.Close();
             }
         }
 
@@ -93,7 +155,7 @@ namespace HabitTracker
                         DrikingWater record = new()
                         {
                             Id = reader.GetInt32(0),
-                            Date = DateTime.ParseExact(reader.GetString(1), "dd-MM-yy", new CultureInfo("en-US")),
+                            Date = DateTime.ParseExact(reader.GetString(1), "dd-MM-yyyy", new CultureInfo("en-US")),
                             Quantity = reader.GetInt32(2)
                         };
                         tableData.Add(record);
