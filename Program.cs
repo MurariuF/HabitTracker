@@ -51,6 +51,7 @@ namespace HabitTracker
                     case "0":
                         Console.WriteLine("\n\nClosing Application");
                         closeApp = true;
+                        Environment.Exit(0);
                         break;
                     case "1":
                         GetAllRecords();
@@ -212,6 +213,12 @@ namespace HabitTracker
             string dateInput = Console.ReadLine();
 
             if(dateInput == "0")  GetUserInput();
+
+            while (!DateTime.TryParseExact(dateInput, "dd-MM-yyyy", new CultureInfo("en-US"), DateTimeStyles.None, out _))
+            {
+                Console.WriteLine("\n\nInvalid date format. Please enter the date in the format dd-mm-yyyy. Type 0 to return to main menu");
+                dateInput = Console.ReadLine();
+            }
 
             return dateInput;
         }
